@@ -15,8 +15,8 @@ const superAdminSchema = new Schema({
     _id: { type:  Number, auto: true },
     superAdminId: { type: String, required: true,  trim: true }, // Unique SuperAdmin Identifier
     companyId: { type: String, required: true,   trim: true }, // Unique Company Identifier
-    companyName: { type: String, required: true, trim: true }, // Name of the Company
-    companySize: { type: Number, required: true, min: 1 }, // Number of employees
+    companyName: { type: String, required: true,  trim: true }, // Name of the Company
+    companySize: { type: Number, required: true,  min: 1 }, // Number of employees
     registrationNumber: { type: String, required: true,   trim: true }, // Govt. Registration No.
     companyLogo: { type: String, trim: true }, // Company Logo
     domain: { type: String, required: true,   lowercase: true, trim: true }, // Company Website Domain

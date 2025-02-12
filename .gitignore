@@ -6,3 +6,5 @@ package-lock.json
 # Ignore log files
 logs/
 *.log
+
+.env
