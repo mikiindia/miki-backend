@@ -15,11 +15,14 @@ const authMiddleware = async (req, res, next) => {
             return res.status(401).json({ status: 401, message: 'Invalid or Expired Token' });
         }
 
-        // Fetch user from database
-        const user = await MasterUser.findOne({ 
-            userId: decoded.userId, 
-            roleId: decoded.roleId, 
-            status: 1 
+        // Fetch user from database (checking multiple possible IDs with roleId)
+        const user = await MasterUser.findOne({
+            $or: [
+                { supId: decoded.supId, roleId: decoded.roleId, status: 1 },
+                { tenantId: decoded.tenantId, roleId: decoded.roleId, status: 1 },
+                { bdmId: decoded.bdmId, roleId: decoded.roleId, status: 1 },
+                { userId: decoded.userId, roleId: decoded.roleId, status: 1 }
+            ]
         }).lean();
 
         if (!user) {
@@ -27,17 +30,15 @@ const authMiddleware = async (req, res, next) => {
         }
 
         // Attach user details to the request object
-        req.user = decoded;
+        req.user = {
+            supId: decoded.supId || null,
+            tenantId: decoded.tenantId || null,
+            bdmId: decoded.bdmId || null,
+            userId: decoded.userId || null,
+            roleId: decoded.roleId
+        };
 
-        // Send response with userId and roleId before calling next middleware
-        res.status(200).json({ 
-            status: 200, 
-            message: 'User authenticated successfully', 
-            userId: decoded.userId, 
-            roleId: decoded.roleId 
-        });
-
-        next(); // Proceed to the next middleware
+        next(); // ✅ Proceed to the next middleware
     } catch (error) {
         return res.status(500).json({ status: 500, message: 'Server Error during authentication' });
     }

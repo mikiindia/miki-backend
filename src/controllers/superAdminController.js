@@ -3,16 +3,87 @@ const jwt = require('jsonwebtoken');
 const dotenv = require('dotenv');
 const MasterUser = require('../models/masterUserSchema');
 const { generateAccessToken, generateRefreshToken } = require('../utils/tokenUtils');
-
+const { body, validationResult } = require('express-validator');
 dotenv.config();
+const Role = require('../models/Role');
+const bcrypt = require('bcrypt');
+const SuperAdmin = require('../models/superAdminSchema');
+const { getNextSupID } = require('../utils/sequenceSupID'); // Function to get next role ID
+const getNextSequenceId = require('../utils/nextSequenceId');
+ 
+ 
 
-// // Secure Cookie Options
-// const cookieOptions = {
-//     httpOnly: true,
-//     secure: process.env.NODE_ENV === 'production',
-//     sameSite: 'Strict',
-//     maxAge: 30 * 60 * 1000 // 30 minutes
-// };
+// ** Register Super Admin **
+const registerSuperadmin = async (req, res) => {
+    try {
+        // ** Validation Rules **
+        await body('email_id').isEmail().withMessage('Invalid email format').run(req);
+        await body('phone_Number').isNumeric().isLength({ min: 10, max: 15 })
+            .withMessage('Phone number must be between 10-15 digits').run(req);
+        
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ status: 400, errors: errors.array() });
+        }
+
+        // ** Extract Data from Request **
+        const { companyId, companyName, companySize, registrationNumber, companyLogo, 
+                domain, country, ownerName, email_id, phone_Number, password, address } = req.body;
+
+        // ** Check if Email already exists **
+        const existingSuperadmin = await SuperAdmin.findOne({ email_id });
+        if (existingSuperadmin) {
+            return res.status(400).json({ status: 400, message: 'Email already registered' });
+        }
+
+        // ** Fetch Role ID for "SUPER ADMIN" **
+        const superAdminRole = await Role.findOne({ roleName: "SUPER ADMIN", status: 1 });
+        if (!superAdminRole) {
+            return res.status(400).json({ status: 400, message: 'SUPER ADMIN role not found' });
+        }
+
+        // ** Generate next _id for SuperAdmin **
+         // Generate custom _id and userId
+         const id = await getNextSequenceId('superadmin');
+         const superAdminId = await getNextSupID();
+
+        // ** Hash Password **
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
+        // ** Create SuperAdmin Object **
+        const newSuperAdmin = new SuperAdmin({
+            _id: id,
+            superAdminId , // Generate unique ID
+            companyId,
+            companyName,
+            companySize,
+            registrationNumber,
+            companyLogo,
+            domain,
+            country,
+            ownerName,
+            email_id,
+            phone_Number,
+            password: hashedPassword,
+            roleId: superAdminRole.roleId, // Assign fetched Role ID
+            address,
+            isVerified: false,
+            status: 1,
+            audit: { createdAt: new Date(), createdBy: "System" }
+        });
+
+        // ** Save Super Admin to DB **
+        await newSuperAdmin.save();
+        return res.status(201).json({ status: 201, message: 'SuperAdmin registered successfully', data: newSuperAdmin });
+
+    } catch (error) {
+        console.error("❌ Error in registerSuperadmin:", error);
+        return res.status(500).json({ status: 500, message: 'Internal Server Error' });
+    }
+};
+
+ 
 
 
 const loginSuperAdmin = async (req, res) => {
@@ -35,13 +106,15 @@ const loginSuperAdmin = async (req, res) => {
         res.cookie('accessToken', accessToken, { 
             httpOnly: true, 
             secure: process.env.COOKIE_SECURE === 'true',
-            sameSite: 'Strict' 
+            sameSite: 'Strict' ,
+            maxAge: 30 * 60 * 1000 // 30 minutes in milliseconds
         });
 
         res.cookie('refreshToken', refreshToken, { 
             httpOnly: true, 
             secure: process.env.COOKIE_SECURE === 'true',
-            sameSite: 'Strict' 
+            sameSite: 'Strict' ,
+            maxAge: 15 * 24 * 60 * 60 * 1000 // 15 days in milliseconds
         });
 
         res.json({ message: 'Login successful', accessToken });
@@ -61,4 +134,4 @@ const logoutSuperAdmin = async (req, res) => {
     }
 };
 
-module.exports = { loginSuperadmin, logoutSuperadmin };
+module.exports = { registerSuperadmin, loginSuperAdmin, logoutSuperAdmin };

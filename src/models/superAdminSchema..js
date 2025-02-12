@@ -13,7 +13,7 @@ const auditSchema = new Schema({
 //   SuperAdmin Schema (Company Information)
 const superAdminSchema = new Schema({
     _id: { type:  Number, auto: true },
-    superAdminId: { type: String, required: true,  trim: true }, // Unique SuperAdmin Identifier
+    supId: { type: String, required: true,  trim: true }, // Unique SuperAdmin Identifier
     companyId: { type: String, required: true,   trim: true }, // Unique Company Identifier
     companyName: { type: String, required: true,  trim: true }, // Name of the Company
     companySize: { type: Number, required: true,  min: 1 }, // Number of employees
@@ -43,7 +43,17 @@ const superAdminSchema = new Schema({
 
     audit: auditSchema // Audit Information
 });
-
+// **Middleware to Auto-Increment `_id` Before Saving**
+superAdminSchema.pre('save', async function (next) {
+    if (this.isNew) {
+        try {
+            this._id = await getNextSequenceId('superAdminId'); // Get Next ID
+        } catch (error) {
+            return next(error);
+        }
+    }
+    next();
+});
 //   Password Hashing before saving
 superAdminSchema.pre('save', async function (next) {
     if (!this.isModified('password')) return next();
