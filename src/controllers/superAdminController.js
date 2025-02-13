@@ -89,9 +89,9 @@ const registerSuperadmin = async (req, res) => {
 const loginSuperAdmin = async (req, res) => {
     try {
         const { email, password } = req.body;
-        const user = await MasterUser.findOne({ email, roleId: 'superadmin', status: 1 });
+        const user = await MasterUser.findOne({ email_id: email, isSuperAdmin: 1, status: 1 });
 
-        if (!user || !(await bcrypt.compare(password, user.password))) {
+        if (!user || !(await bcrypt.compare(password, user.password_hash))) {
             return res.status(401).json({ message: 'Invalid credentials' });
         }
 
@@ -117,7 +117,7 @@ const loginSuperAdmin = async (req, res) => {
             maxAge: 15 * 24 * 60 * 60 * 1000 // 15 days in milliseconds
         });
 
-        res.status(200).json({status: 200, message: 'Login successful', accessToken });
+        res.status(200).json({status: 200,  message: 'Login successful', accessToken });
     } catch (error) {
         res.status(500).json({ status: 500, message: 'Server error', error: error.message });
     }

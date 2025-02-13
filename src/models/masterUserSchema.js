@@ -1,4 +1,7 @@
 const mongoose = require("mongoose");
+const getNextSequenceId = require('../utils/nextSequenceId'); 
+const bcrypt = require('bcrypt');
+
 
 const masterUserSchema = new mongoose.Schema(
   {
@@ -29,5 +32,30 @@ const masterUserSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+// **Middleware to Auto-Increment `_id` Before Saving**
+masterUserSchema.pre('save', async function (next) {
+  if (this.isNew) {
+      try {
+          this._id = await getNextSequenceId('masterUserId'); // Get Next ID
+      } catch (error) {
+          return next(error);
+      }
+  }
+  next();
+});
+
+// **Middleware to Hash Password Before Saving**
+masterUserSchema.pre('save', async function (next) {
+  if (!this.isModified('password_hash')) return next(); // Hash only if changed
+  try {
+      const saltRounds = 10; // Recommended: 10-12 rounds
+      this.password_hash = await bcrypt.hash(this.password_hash, saltRounds);
+      next();
+  } catch (error) {
+      return next(error);
+  }
+});
+
 
 module.exports = mongoose.model("MasterUser", masterUserSchema);

@@ -5,7 +5,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js",
-    "insert-admin": "node scripts/insertSuperAdmin.js"
+    "insert-admin": "node src/utils/insertSuperAdmin.js",
+   "insert-masteruser": "node src/utils/insertMasterUser.js"
 
   },
   "keywords": [],

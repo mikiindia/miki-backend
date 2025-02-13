@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 const Schema = mongoose.Schema;
-
+const getNextSequenceId = require('../utils/nextSequenceId'); 
 //   Audit Schema for tracking changes
 const auditSchema = new Schema({
     createdAt: { type: Date, default: Date.now },
@@ -27,7 +27,7 @@ const superAdminSchema = new Schema({
     phone_Number: { type: String, required: true,   trim: true }, // Contact number
     password_hash: { type: String, required: true }, // Encrypted Password
 
-    roleId: {  String, ref: 'Role', required: true }, // Linking Role
+    roleId: {  String  }, // Linking Role
 
     address: {
         street: { type: String, trim: true },
@@ -37,7 +37,7 @@ const superAdminSchema = new Schema({
         country: { type: String, trim: true }
     },
 
-    password: { type: String, required: true }, // Hashed Password
+    
     isVerified: { type: Boolean, default: false }, // Email/Phone Verification
     status: { type: Number, default: 1 }, // 1 = Active, 0 = Inactive
 
@@ -47,24 +47,27 @@ const superAdminSchema = new Schema({
 superAdminSchema.pre('save', async function (next) {
     if (this.isNew) {
         try {
-            this._id = await getNextSequenceId('superAdminId'); // Get Next ID
+            this._id = await getNextSequenceId('superadminId'); // Get Next ID
         } catch (error) {
             return next(error);
         }
     }
     next();
 });
-//   Password Hashing before saving
+
+// **Middleware to Hash Password Before Saving**
 superAdminSchema.pre('save', async function (next) {
-    if (!this.isModified('password')) return next();
-    const salt = await bcrypt.genSalt(10); // Generate salt
-    this.password = await bcrypt.hash(this.password, salt); // Hash password
-    next();
+    if (!this.isModified('password_hash')) return next(); // Hash only if changed
+    try {
+        const saltRounds = 10; // Recommended: 10-12 rounds
+        this.password_hash = await bcrypt.hash(this.password_hash, saltRounds);
+        next();
+    } catch (error) {
+        return next(error);
+    }
 });
 
-//   Password Verification Method
-superAdminSchema.methods.verifyPassword = async function (password) {
-    return await bcrypt.compare(password, this.password);
-};
+ 
+ 
 
 module.exports = mongoose.model('SuperAdmin', superAdminSchema);

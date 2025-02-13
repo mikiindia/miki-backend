@@ -1,26 +1,15 @@
 const mongoose = require('mongoose');
 const MasterUser = require('../models/masterUserSchema'); // Import MasterUser Model
+const connectDB = require('../config/db'); // Import the existing connection setup
 
-const MONGO_URI = "mongodb+srv://<username>:<password>@cluster0.mongodb.net/<dbname>?retryWrites=true&w=majority";
-
-// 🔗 Connect to MongoDB Atlas
-mongoose.connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
-    .then(() => console.log("✅ Connected to MongoDB Atlas"))
-    .catch(err => console.error("❌ MongoDB Connection Error:", err));
-
-// 🔢 Function to Get Next Sequence for _id
-const getNextSequenceValue = async (sequenceName) => {
-    const sequenceDoc = await mongoose.connection.collection("counters").findOneAndUpdate(
-        { _id: sequenceName },
-        { $inc: { sequence_value: 1 } },
-        { returnDocument: "after", upsert: true }
-    );
-    return sequenceDoc.value.sequence_value;
-};
-
-// 🔹 Function to Insert Default MasterUser
+  
+//   Function to Insert Default MasterUser
 const insertMasterUser = async () => {
     try {
+
+        // ✅ Ensure MongoDB is connected before inserting data
+        await connectDB();
+
         // ✅ Check if MasterUser already exists
         const existingUser = await MasterUser.findOne({ supId: "sup_001" });
 
@@ -29,19 +18,19 @@ const insertMasterUser = async () => {
             return;
         }
 
-        // 🔢 Get Next Auto-Incremented ID
-        const nextId = await getNextSequenceValue("MasterUser");
+        // // 🔢 Get Next Auto-Incremented ID
+        // const nextId = await getNextSequenceValue("MasterUser");
 
         // ✅ Create new MasterUser
         const newUser = new MasterUser({
-            _id: nextId,
+            
             supId: "sup_001",
             tenantId: null,
             bdmId: null,
             userId: null,
             phone_Number: "9876543210",
-            email_id: "admin@example.com",
-            password_hash: "hashed_password", // Replace with a hashed password
+            email_id: "info@lexmetech.com",
+            password_hash: "lex123@mind#", // Replace with a hashed password
             roleId: "role_001", // Replace with an actual role ID
             tenant_ID: "1",
             isSuperAdmin: 1, // Mark as super admin
