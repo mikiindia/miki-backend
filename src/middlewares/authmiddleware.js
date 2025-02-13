@@ -1,35 +1,36 @@
 const jwt = require('jsonwebtoken');
-const MasterUser = require('../models/masterUserSchema');
+const { refreshAccessToken } = require('../controllers/authController');
+
+// Secure Cookie Options
+const cookieOptions = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'Strict'
+};
 
 const authMiddleware = async (req, res, next) => {
     try {
-        const token = req.cookies.accessToken;
+        let token = req.cookies.accessToken;
+
+        // ❌ If no access token found, return Unauthorized
         if (!token) {
             return res.status(401).json({ status: 401, message: 'Unauthorized: No token provided' });
         }
 
         let decoded;
         try {
+            // ✅ Verify Access Token
             decoded = jwt.verify(token, process.env.JWT_SECRET);
         } catch (error) {
-            return res.status(401).json({ status: 401, message: 'Invalid or Expired Token' });
+            // 🔄 If access token is expired, call refreshAccessToken
+            if (error.name === 'TokenExpiredError') {
+                return refreshAccessToken(req, res); // Call the function directly
+            } else {
+                return res.status(401).json({ status: 401, message: 'Invalid or Expired Token' });
+            }
         }
 
-        // Fetch user from database (checking multiple possible IDs with roleId)
-        const user = await MasterUser.findOne({
-            $or: [
-                { supId: decoded.supId, roleId: decoded.roleId, status: 1 },
-                { tenantId: decoded.tenantId, roleId: decoded.roleId, status: 1 },
-                { bdmId: decoded.bdmId, roleId: decoded.roleId, status: 1 },
-                { userId: decoded.userId, roleId: decoded.roleId, status: 1 }
-            ]
-        }).lean();
-
-        if (!user) {
-            return res.status(403).json({ status: 403, message: 'Access Denied: User not active or role mismatch' });
-        }
-
-        // Attach user details to the request object
+        // ✅ Attach user details to `req.user`
         req.user = {
             supId: decoded.supId || null,
             tenantId: decoded.tenantId || null,
@@ -38,7 +39,8 @@ const authMiddleware = async (req, res, next) => {
             roleId: decoded.roleId
         };
 
-        next(); // ✅ Proceed to the next middleware
+        next(); // Proceed to the next middleware ✅
+
     } catch (error) {
         return res.status(500).json({ status: 500, message: 'Server Error during authentication' });
     }

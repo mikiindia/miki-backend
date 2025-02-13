@@ -11,8 +11,8 @@ const auditSchema = new Schema({
 
 // Tenant Schema
 const tenantSchema = new Schema({
-    _id: { type: Number, auto: true }, // Auto-generated unique ID
-    tenant_ID: { type: String, required: true  }, // Unique Tenant Identifier
+    _id: { type: Number, auto: true }, // Auto-generated unique ID used fore creating database
+    tenantId: { type: String, required: true  }, // Unique Tenant Identifier
     companyName: { type: String, required: true }, // Tenant's Company Name
     companySize: { type: String, enum: ['Small', 'Medium', 'Large'], required: true }, // Size of the Company
     registrationNumber: { type: String   }, // Business Registration Number
@@ -22,7 +22,7 @@ const tenantSchema = new Schema({
 
     email_id: { type: String, required: true  }, // Official Email ID
     phone_number: { type: String, required: true  }, // Contact Phone Number
-    password: { type: String, required: true }, // Encrypted Password
+    password_hash: { type: String, required: true }, // Encrypted Password
     address: { type: String, required: true }, // Office Address
 
     roleId: { type: String, ref: 'Role', required: true }, // Assigned Role
@@ -39,6 +39,6 @@ const tenantSchema = new Schema({
 });
 
 // Indexing for better performance
-tenantSchema.index({ tenantId: 1, email: 1, domain: 1 });
+tenantSchema.index({ tenantId: 1, domain: 1 });
 
 module.exports = mongoose.model('Tenant', tenantSchema);

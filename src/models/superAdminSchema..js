@@ -25,7 +25,7 @@ const superAdminSchema = new Schema({
     ownerName: { type: String, required: true, trim: true }, // Owner/CEO Name
     email_id: { type: String, required: true,   lowercase: true, trim: true }, // Unique email
     phone_Number: { type: String, required: true,   trim: true }, // Contact number
-    password: { type: String, required: true }, // Encrypted Password
+    password_hash: { type: String, required: true }, // Encrypted Password
 
     roleId: {  String, ref: 'Role', required: true }, // Linking Role
 

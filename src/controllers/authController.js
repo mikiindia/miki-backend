@@ -1,10 +1,8 @@
+// authController.js
 const jwt = require('jsonwebtoken');
-const dotenv = require('dotenv');
 const MasterUser = require('../models/masterUserSchema');
 const { generateAccessToken } = require('../utils/tokenUtils');
-dotenv.config();
 
-// Secure Cookie Options
 const cookieOptions = {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
@@ -14,29 +12,57 @@ const cookieOptions = {
 const refreshAccessToken = async (req, res) => {
     try {
         const refreshToken = req.cookies.refreshToken;
+
+        // ❌ If refresh token is missing → Expired session
         if (!refreshToken) {
-            return res.status(401).json({ message: 'Unauthorized: No refresh token provided' });
+            return res.clearCookie('accessToken')
+                .clearCookie('refreshToken')
+                .status(401)
+                .json({ status: 401, message: 'Session expired, please log in again' });
         }
 
-        const decoded = jwt.verify(refreshToken, process.env.JWT_SECRET);
-        const user = await MasterUser.findOne({ userId: decoded.userId, refreshToken, roleId: decoded.roleId, status: 1 }).lean();
+        let refreshDecoded;
+        try {
+            refreshDecoded = jwt.verify(refreshToken, process.env.JWT_SECRET);
+        } catch (error) {
+            // ❌ If refresh token is invalid or expired → Force logout
+            return res.clearCookie('accessToken')
+                .clearCookie('refreshToken')
+                .status(401)
+                .json({ status: 401, message: 'Session expired, please log in again' });
+        }
 
+        // 🔍 Find user in DB (checking all possible ID fields)
+        const user = await MasterUser.findOne({
+            $or: [
+                { supId: refreshDecoded.supId, refreshToken, status: 1 },
+                { tenantId: refreshDecoded.tenantId, refreshToken, status: 1 },
+                { bdmId: refreshDecoded.bdmId, refreshToken, status: 1 },
+                { userId: refreshDecoded.userId, refreshToken, status: 1 }
+            ]
+        }).lean();
+
+        // ❌ If user is not found or token mismatch → Expire session
         if (!user) {
-            return res.status(403).json({ message: 'Invalid or expired refresh token' });
+            return res.clearCookie('accessToken')
+                .clearCookie('refreshToken')
+                .status(403)
+                .json({ status: 403, message: 'Invalid refresh token, please log in again' });
         }
 
-        // Generate new Access Token
+        // ✅ Generate New Access Token
         const newAccessToken = generateAccessToken(user);
 
-        // Set the cookie with centralized options
-        res.cookie('accessToken', newAccessToken, { 
-            ...cookieOptions, 
-            maxAge: 30 * 60 * 1000  // Explicitly setting maxAge for accessToken (30 min)
+        // 🍪 Set new Access Token Cookie
+        res.cookie('accessToken', newAccessToken, {
+            ...cookieOptions,
+            maxAge: 30 * 60 * 1000  // 30 minutes
         });
 
-        res.json({ message: 'Token refreshed', accessToken: newAccessToken });
+        return res.status(200).json({ status: 200, message: 'Access token refreshed successfully' });
+
     } catch (error) {
-        return res.status(401).json({ message: 'Invalid refresh token' });
+        return res.status(500).json({ status: 500, message: 'Server Error while refreshing token' });
     }
 };
 

@@ -3,13 +3,16 @@ const mongoose = require("mongoose");
 const masterUserSchema = new mongoose.Schema(
   {
     _id: { type: Number },
+    supId: { type: String, default: null },
+    tenantId: { type: String, default: null },
+    bdmId: { type: String, default: null },
     userId: { type: String, default: null },
     phone_Number: { type: String },
     email_id: { type: String },
-    password: { type: String },
+    password_hash: { type: String },
 
     roleId: { type: String, ref: "Role" },
-    tenantId: { type: String, ref: "Tenant", default: null },
+    tenant_ID: { type: String, ref: "Tenant", default: null }, // matched with _id of tenantSchema used in create tenant db 
 
     isSuperAdmin: { type: Number, default: 0 },
     isTenant: { type: Number, default: 0 },

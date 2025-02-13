@@ -20,8 +20,8 @@ const userSchema = new Schema({
 
     // Basic Information ----------------------------------------------
     name: { type: String, required: true, trim: true, },
-    email: { type: String, required: true, lowercase: true, trim: true },
-    phoneNumber: { type: String, required: true,  },
+    email_id: { type: String, required: true, lowercase: true, trim: true },
+    phone_Number: { type: String, required: true,  },
     address: { street: { type: String }, city: { type: String }, state: { type: String }, zip: { type: String }, country: { type: String }, },
 
     // Role Information ---------------------------------------------- 
@@ -29,7 +29,7 @@ const userSchema = new Schema({
 
 
     // Security Information ----------------------------------------------
-    passwordHash: { type: String, required: true, select: false },
+    password_hash: { type: String, required: true, select: false },
     passwordChangedAt: { type: Date },
     failedLoginAttempts: { type: Number, default: 0 }, // Brute-force attack protection
     accountLocked: { type: Boolean, default: false }, // Lock account after multiple failed attempts
