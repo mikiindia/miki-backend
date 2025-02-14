@@ -33,7 +33,7 @@ const userActivitySchema = new Schema(
         }, // Custom Activity ID
         userId: {
             type: String,
-            ref: 'User',
+           
             required: true,
         },
         activityType: {

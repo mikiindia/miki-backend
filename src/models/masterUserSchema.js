@@ -6,9 +6,6 @@ const bcrypt = require('bcrypt');
 const masterUserSchema = new mongoose.Schema(
   {
     _id: { type: Number },
-    supId: { type: String, default: null },
-    tenantId: { type: String, default: null },
-    bdmId: { type: String, default: null },
     userId: { type: String, default: null },
     phone_Number: { type: String },
     email_id: { type: String },

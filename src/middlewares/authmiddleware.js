@@ -1,12 +1,7 @@
 const jwt = require('jsonwebtoken');
 const { refreshAccessToken } = require('../controllers/authController');
 
-// Secure Cookie Options
-const cookieOptions = {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'Strict'
-};
+ 
 
 const authMiddleware = async (req, res, next) => {
     try {
@@ -32,11 +27,10 @@ const authMiddleware = async (req, res, next) => {
 
         // ✅ Attach user details to `req.user`
         req.user = {
-            supId: decoded.supId || null,
-            tenantId: decoded.tenantId || null,
-            bdmId: decoded.bdmId || null,
+             
             userId: decoded.userId || null,
-            roleId: decoded.roleId
+            roleId: decoded.roleId,
+            tenantId: decoded.tenant_ID  
         };
 
         next(); // Proceed to the next middleware ✅

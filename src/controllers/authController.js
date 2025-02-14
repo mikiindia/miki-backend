@@ -33,14 +33,7 @@ const refreshAccessToken = async (req, res) => {
         }
 
         // 🔍 Find user in DB (checking all possible ID fields)
-        const user = await MasterUser.findOne({
-            $or: [
-                { supId: refreshDecoded.supId, refreshToken, status: 1 },
-                { tenantId: refreshDecoded.tenantId, refreshToken, status: 1 },
-                { bdmId: refreshDecoded.bdmId, refreshToken, status: 1 },
-                { userId: refreshDecoded.userId, refreshToken, status: 1 }
-            ]
-        }).lean();
+        const user = await MasterUser.findOne({ userId: refreshDecoded.userId,  refreshToken, status: 1 }).lean();
 
         // ❌ If user is not found or token mismatch → Expire session
         if (!user) {

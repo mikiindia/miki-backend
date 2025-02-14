@@ -12,3 +12,7 @@ modulenames.txt
 
 # env file 
 .env
+
+# append direct files 
+insertMasterUser.js
+insertSuperAdmin.js

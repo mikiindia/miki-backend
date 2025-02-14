@@ -16,13 +16,13 @@ const saveModule = async (req, res) => {
     try {
         // ✅ Validate moduleName: Only letters, underscore, and hyphen allowed
         if (!/^[A-Za-z_-]+$/.test(moduleName.trim())) {
-            return res.status(400).json({ status: 'error', message: 'Module name can only contain letters, underscores (_), and hyphens (-).' });
+            return res.status(400).json({ status:  400, message: 'Module name can only contain letters, underscores (_), and hyphens (-).' });
         }
 
         // ✅ Check if module already exists
         const existingModule = await ModuleName.findOne({ moduleName: moduleName.trim(), status: 1 });
         if (existingModule) {
-            return res.status(400).json({ status: 'error', message: 'A module with this name already exists.' });
+            return res.status(400).json({ status:  400, message: 'A module with this name already exists.' });
         }
 
         const _id = await getNextSequenceId('module');
@@ -33,7 +33,7 @@ const saveModule = async (req, res) => {
             moduleName: moduleName.trim(),
             description: description || '',
             status: 1,
-            audit: { createdAt: new Date(), createdBy: req.user?.username || 'system' }
+            audit: { createdAt: new Date(), createdBy: req.user.roleId || 'system' }
         });
 
         await newModule.save();

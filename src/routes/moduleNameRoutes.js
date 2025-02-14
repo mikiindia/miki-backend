@@ -7,7 +7,7 @@ const {
     listModules,
     saveModule,
     getModuleById,
-    updateModule,
+    //updateModule,
     deleteModule
 } = require('../controllers/moduleNameController'); // Import Module Controller
 
@@ -38,13 +38,13 @@ router.get(
     getModuleById
 );
 
-// Update Module by ID (Requires "edit" or "all" permission)
-router.put(
-    '/update-module/:moduleId',
-    // auth,
-    // checkPermission(MODULE_NAMES, [PERMISSIONS.EDIT, PERMISSIONS.ALL]),
-    updateModule
-);
+// // Update Module by ID (Requires "edit" or "all" permission)
+// router.put(
+//     '/update-module/:moduleId',
+//     // auth,
+//     // checkPermission(MODULE_NAMES, [PERMISSIONS.EDIT, PERMISSIONS.ALL]),
+//     updateModule
+// );
 
 // Delete Module (Requires "delete" or "all" permission)
 router.delete(
