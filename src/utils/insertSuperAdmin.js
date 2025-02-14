@@ -28,9 +28,9 @@ const addSuperAdmin = async () => {
             domain: "techcorp.com",
             country: "India",
             ownerName: "lexmetech",
-            email_id: "info@lexmetech.com",
-            phone_Number: "+1234567890",
-            password_hash: "lex123@mind#",
+            email_id: "",
+            phone_Number: "",
+            password_hash: "",
             roleId: "role_001",
             address: {
                 street: "123 Main St",

@@ -1,11 +1,10 @@
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
+ const jwt = require('jsonwebtoken');
 const dotenv = require('dotenv');
 const MasterUser = require('../models/masterUserSchema');
 const { generateAccessToken, generateRefreshToken } = require('../utils/tokenUtils');
 const { body, validationResult } = require('express-validator');
 dotenv.config();
-const Role = require('../models/Role');
+const Role = require('../models/roleSchema');
 const bcrypt = require('bcrypt');
 const SuperAdmin = require('../models/superAdminSchema');
 const { getNextSupID } = require('../utils/sequenceSupID'); // Function to get next role ID

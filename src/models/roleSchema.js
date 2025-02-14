@@ -11,6 +11,7 @@ const auditSchema = new Schema({
 
 // Role Schema
 const roleSchema = new Schema({
+    _id: { type: Number, auto: true },
     roleId: { type: Number, required: true, unique: true }, // Role Identifier
     roleName: { type: String, required: true }, // Role Name (e.g., "Admin", "User", "Manager")
 

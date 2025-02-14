@@ -28,9 +28,9 @@ const insertMasterUser = async () => {
             tenantId: null,
             bdmId: null,
             userId: null,
-            phone_Number: "9876543210",
-            email_id: "info@lexmetech.com",
-            password_hash: "lex123@mind#", // Replace with a hashed password
+            phone_Number: "",
+            email_id: "",
+            password_hash: "", // Replace with a hashed password
             roleId: "role_001", // Replace with an actual role ID
             tenant_ID: "1",
             isSuperAdmin: 1, // Mark as super admin
