@@ -11,7 +11,7 @@ const captureRequestMetadata = require('./src/middlewares/captureRequestMetadata
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 const app = express();  // Create the app instance
- 
+const cookieParser = require('cookie-parser'); 
 // Load environment variables from .env file
 dotenv.config();
 
@@ -28,6 +28,10 @@ app.use(cors());  //  This allows all origins by default
 
 // Middleware to parse incoming JSON requests
 app.use(express.json());
+
+// ✅ Allows reading cookies from `req.cookies`
+app.use(cookieParser()); 
+
 
 // Middleware to log every incoming request (using Winston logger)
 app.use((req, res, next) => {

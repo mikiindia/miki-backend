@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const auth = require('../middlewares/authMiddleware'); // Authentication Middleware
-const { checkPermission, PERMISSIONS } = require('../middlewares/checkPermission');
+
 
 const {
     listModules,
@@ -11,21 +10,24 @@ const {
     deleteModule
 } = require('../controllers/moduleNameController'); // Import Module Controller
 
+const auth = require('../middlewares/authmiddleware'); // Authentication Middleware
+const { checkPermission, PERMISSIONS } = require('../middlewares/checkPermission');
+
 // Define Module Names for Permission Checks
 const MODULE_NAMES = ['MODULES', 'ALL_MODULE'];
 
 // List All Modules (Requires "view" or "all" permission)
 router.get(
     '/get-modules',
-    // auth,
-    // checkPermission(MODULE_NAMES, [PERMISSIONS.VIEW, PERMISSIONS.ALL]),
-    listModules
+     auth,
+     checkPermission(MODULE_NAMES, [PERMISSIONS.VIEW, PERMISSIONS.ALL]),  // Wrap this correctly as middleware
+     listModules
 );
 
 // Create a New Module (Requires "add" or "all" permission)
 router.post(
     '/create-module',
-    // auth,
+    auth,
     // checkPermission(MODULE_NAMES, [PERMISSIONS.ADD, PERMISSIONS.ALL]),
     saveModule
 );
@@ -33,7 +35,7 @@ router.post(
 // Get Module by ID (Requires "view" or "all" permission)
 router.get(
     '/get-module/:moduleId',
-    // auth,
+    auth,
     // checkPermission(MODULE_NAMES, [PERMISSIONS.VIEW, PERMISSIONS.ALL]),
     getModuleById
 );
@@ -41,7 +43,7 @@ router.get(
 // // Update Module by ID (Requires "edit" or "all" permission)
 // router.put(
 //     '/update-module/:moduleId',
-//     // auth,
+//     auth,
 //     // checkPermission(MODULE_NAMES, [PERMISSIONS.EDIT, PERMISSIONS.ALL]),
 //     updateModule
 // );
@@ -49,7 +51,7 @@ router.get(
 // Delete Module (Requires "delete" or "all" permission)
 router.delete(
     '/delete-module/:moduleId',
-    // auth,
+    auth,
     // checkPermission(MODULE_NAMES, [PERMISSIONS.DELETE, PERMISSIONS.ALL]),
     deleteModule
 );

@@ -107,7 +107,7 @@ const loginSuperAdmin = async (req, res) => {
             httpOnly: true, 
             secure: process.env.COOKIE_SECURE === 'true',
             sameSite: 'Strict' ,
-            maxAge: 30 * 60 * 1000 // 30 minutes in milliseconds
+            maxAge: 15 * 60 * 1000 // 15 minutes in milliseconds
         });
 
         res.cookie('refreshToken', refreshToken, { 

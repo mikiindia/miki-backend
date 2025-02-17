@@ -107,7 +107,7 @@ const saveModule = async (req, res) => {
  * ✅ List All Active Modules with Pagination
  */
 const listModules = async (req, res) => {
-    if (!req.user) return res.status(401).json({ status: 'error', message: 'Unauthorized: No token or invalid token' });
+    
 
     const { userId } = req.user, { ipAddress, requestMethod, deviceInfo } = req.metadata || {}, endpoint = req.originalUrl;
     const { page = 1, limit = 10 } = req.query;
@@ -184,7 +184,7 @@ const deleteModule = async (req, res) => {
     const userId = req.user.userId;
 
     try {
-        const module = await ModuleName.findOne({ _id: moduleId, status: 1 });
+        const module = await ModuleName.findOne({  moduleId, status: 1 });
 
         if (!module) return res.status(404).json({ status: 'error', message: 'Module not found or already inactive' });
 
