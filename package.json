@@ -6,7 +6,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js",
     "insert-admin": "node src/utils/insertSuperAdmin.js",
-   "insert-masteruser": "node src/utils/insertMasterUser.js"
+   "insert-masteruser": "node src/utils/insertMasterUser.js",
+   "insert-role": "node src/utils/insertRole.js"
 
   },
   "keywords": [],

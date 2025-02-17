@@ -16,3 +16,5 @@ modulenames.txt
 # append direct files 
 insertMasterUser.js
 insertSuperAdmin.js
+insertModuleNames.js
+insertRoles.js

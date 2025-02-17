@@ -70,7 +70,7 @@ app.use(morgan(':method :endpoint :status :res[content-length] - :response-time 
 // // Routes for user-related operations
  app.use('/api', require('./src/routes/roleRoutes'));
  app.use('/api', require('./src/routes/moduleNameRoutes'));
-// app.use('/api', require('./src/routes/superAdminRoutes'));
+ app.use('/api', require('./src/routes/superAdminRoutes'));
 // app.use('/api', require('./src/routes/usersRoutes'));
 // app.use('/api', require('./src/routes/userBadgeRoutes'));
 // app.use('/api', require('./src/routes/userPreferenceRoutes'));

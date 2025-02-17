@@ -8,7 +8,8 @@ const Role = require('../models/roleSchema');
 const bcrypt = require('bcrypt');
 const SuperAdmin = require('../models/superAdminSchema');
 const { getNextSupID } = require('../utils/sequenceSupID'); // Function to get next role ID
-const getNextSequenceId = require('../utils/nextSequenceId');
+const getNextSequenceId = require('../utils/nextSequenceId'); // Auto-increment helper
+const logUserActivity = require('../utils/activityLogger'); // ✅ Ensure correct import
  
  
 
@@ -30,7 +31,7 @@ const registerSuperadmin = async (req, res) => {
                 domain, country, ownerName, email_id, phone_Number, password, address } = req.body;
 
         // ** Check if Email already exists **
-        const existingSuperadmin = await SuperAdmin.findOne({ email_id });
+        const existingSuperadmin = await SuperAdmin.findOne({ email_id, status: 1 });
         if (existingSuperadmin) {
             return res.status(400).json({ status: 400, message: 'Email already registered' });
         }

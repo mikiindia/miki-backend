@@ -6,41 +6,42 @@ const {
     listSuperadmins, 
     getSuperadminsById, 
     deleteSuperadmins, 
-    loginSuperadmins, 
-    logoutSuperadmins, 
-    updateSuperadmins
+    loginSuperAdmin, 
+    logoutSuperAdmin, 
+    updateSuperadmins,
+    registerSuperadmin
 
 } = require('../controllers/superAdminController');
 
 const MODULE_NAMES = ['SUPER_ADMIN', 'ALL_MODULE']; // Module defined for permission checking
 
-// List Users (requires "view_users" or "manage_users" permission)
-router.get('/get-superadmin-details',
-    // auth, checkPermission(PERMISSIONS.VIEW, MODULE_NAMES),
-      listSuperadmins);
+// // List Users (requires "view_users" or "manage_users" permission)
+// router.get('/get-superadmin-details',
+//     // auth, checkPermission(PERMISSIONS.VIEW, MODULE_NAMES),
+//       listSuperadmins);
 
-// Get User by ID (requires "view_users" or "manage_users" permission)
-router.get('/get/superadminId/:superadminId', 
-   // auth, checkPermission(PERMISSIONS.VIEW, MODULE_NAMES),
-     getSuperadminsById);
+// // Get User by ID (requires "view_users" or "manage_users" permission)
+// router.get('/get/superadminId/:superadminId', 
+//    // auth, checkPermission(PERMISSIONS.VIEW, MODULE_NAMES),
+//      getSuperadminsById);
 
  // register of super admin
-router.post('/register-superadmin', loginSuperadmins);
+router.post('/register-superadmin', registerSuperadmin);
 
 // User Login (open to all, no permission needed)
-router.post('/login-superadmin', loginSuperadmins);
+router.post('/login-superadmin', loginSuperAdmin);
 
-// Update User profile details
-router.put('/superadmin/superadminId/:superadminId',
-    // auth, checkPermission(PERMISSIONS.EDIT, MODULE_NAMES), 
-     updateSuperadmins);
+// // Update User profile details
+// router.put('/superadmin/superadminId/:superadminId',
+//     // auth, checkPermission(PERMISSIONS.EDIT, MODULE_NAMES), 
+//      updateSuperadmins);
 
-// Delete User (requires "delete_users" or "manage_users" permission)
-router.delete('/deletesuperadmin/:superadminId',
-   //  auth, checkPermission(PERMISSIONS.DELETE, MODULE_NAMES), 
-     deleteSuperadmins);
+// // Delete User (requires "delete_users" or "manage_users" permission)
+// router.delete('/deletesuperadmin/:superadminId',
+//    //  auth, checkPermission(PERMISSIONS.DELETE, MODULE_NAMES), 
+//      deleteSuperadmins);
 
 // Logout User
-router.post('/logout-superadmin', auth, logoutSuperadmins);
+router.post('/logout-superadmin', auth, logoutSuperAdmin);
 
 module.exports = router;
