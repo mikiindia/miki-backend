@@ -2,294 +2,224 @@ const Role = require('../models/roleSchema'); // Import the Role model
 const { getNextRoleID } = require('../utils/sequenceRoleID'); // Function to get next role ID
 const getNextSequenceId = require('../utils/nextSequenceId'); // Function to get next sequence ID
 const dotenv = require('dotenv');
-const { logUserActivity } = require('../utils/activityLogger'); // Import activity logger
+const logUserActivity = require('../utils/activityLogger'); // ✅ Ensure correct import
+const ModuleName = require('../models/moduleNameSchema'); // Module model
 
 // Load environment variables
 dotenv.config();
-
 const listRoles = async (req, res) => {
-    if (!req.user) return res.status(401).json({ status: 'error', message: 'Unauthorized: No token or invalid token' });
+    if (!req.user) {
+        return res.status(401).json({ status: 401, message: 'Unauthorized: No token or invalid token' });
+    }
 
-    const { userId } = req.user.userId, { ipAddress, requestMethod, deviceInfo } = req.metadata || {}, endpoint = req.originalUrl;
+    const { userId } = req.user;
+    const { ipAddress, requestMethod, deviceInfo } = req.metadata || {};
+    const endpoint = req.originalUrl;
     const { page = 1, limit = 10 } = req.query;
-    const pageNumber = parseInt(page, 10), pageSize = parseInt(limit, 10);
 
-    // Validate pagination params
+    const pageNumber = parseInt(page, 10);
+    const pageSize = parseInt(limit, 10);
+
     if (isNaN(pageNumber) || isNaN(pageSize) || pageNumber <= 0 || pageSize <= 0) {
-        return res.status(400).json({ status: 'error', message: 'page and limit must be valid positive numbers' });
+        return res.status(400).json({ status: 400, message: 'page and limit must be valid positive numbers' });
     }
 
     try {
-        const skip = (pageNumber - 1) * pageSize, totalRecords = await Role.countDocuments({ status: 1 });
+        const skip = (pageNumber - 1) * pageSize;
+        const totalRecords = await Role.countDocuments({ status: 1 });
         const roles = await Role.find({ status: 1 }).sort({ 'audit.createdAt': -1 }).skip(skip).limit(pageSize).lean();
 
-        if (!roles.length) return res.status(404).json({ status: 'error', message: 'No active roles found', meta: { page: pageNumber, limit: pageSize, totalRecords, totalPages: Math.ceil(totalRecords / pageSize) }, data: [] });
+        if (!roles.length) {
+            return res.status(404).json({ status: 404, message: 'No active roles found', meta: { page: pageNumber, limit: pageSize, totalRecords, totalPages: Math.ceil(totalRecords / pageSize) }, data: [] });
+        }
 
-        res.status(200).json({
-            status: 'success',
-            meta: { page: pageNumber, limit: pageSize, totalRecords, totalPages: Math.ceil(totalRecords / pageSize) },
-            data: roles.map(({ roleId, name, description, permissions, audit }) => ({
-                roleId, name, description, permissions, audit: { createdAt: audit.createdAt, createdBy: audit.createdBy }, status
+        res.status(200).json({ status: 200, meta: { page: pageNumber, limit: pageSize, totalRecords, totalPages: Math.ceil(totalRecords / pageSize) }, data: roles });
 
+        await logUserActivity({ userId, activityType: 'GET_ROLES', activityDetails: 'Fetched all active roles', ipAddress, deviceInfo, endpoint, method: requestMethod || req.method, activityStatus: 'success' });
+    }  catch (err) {
+        await logUserActivity({ userId, activityType: 'GET_ROLES', activityDetails: 'Error fetching roles', ipAddress, deviceInfo, endpoint, method: requestMethod || req.method, activityStatus: 'failed', errorMessage: err.message });
 
-            }))
-        });
-
-        // Log activity after success
-        await logUserActivity({
-            userId, activityType: 'GET_ROLES', activityDetails: `Fetched all active roles`, ipAddress, deviceInfo, endpoint, method: requestMethod || req.method, activityStatus: 'success'
-        });
-    } catch (err) {
-        // Log error activity
-        await logUserActivity({
-            userId, activityType: 'GET_ROLES', activityDetails: 'Error occurred while fetching roles', ipAddress, deviceInfo, endpoint, method: requestMethod || req.method, activityStatus: 'failed', errorMessage: err.message
-        });
-
-        res.status(500).json({ status: 'error', message: 'An error occurred while fetching roles', details: err.message });
+        res.status(500).json({ status: 500, message: 'An error occurred while fetching roles', details: err.message });
     }
 };
 
-
-// Get Role by RoleId
 const getRoleById = async (req, res) => {
-    if (!req.user) return res.status(401).json({ status: 'error', message: 'Unauthorized: No token or invalid token' });
+    if (!req.user) return res.status(401).json({ status: 401, message: 'Unauthorized: No token or invalid token' });
 
-    const { roleId } = req.params, { ipAddress, requestMethod, deviceInfo } = req.metadata || {}, endpoint = req.originalUrl;
+    const { roleId } = req.body;
+    const { ipAddress, requestMethod, deviceInfo } = req.metadata || {};
+    const endpoint = req.originalUrl;
     const loggedInUserId = req.user.userId;
 
+    if (!roleId) {
+        return res.status(400).json({ status: 400, message: 'roleId is required' });
+    }
+
     try {
-        // Fetch role by roleId with active status
-        const role = await Role.findOne({ roleId, status: 1 }, { roleId: 1, name: 1, description: 1, permissions: 1, audit: 1 });
+        const role = await Role.findOne({ roleId, status: 1 }).lean();
+        if (!role) return res.status(404).json({ status: 404, message: 'Role not found or inactive' });
 
-        if (!role) return res.status(404).json({ status: 'error', message: 'Role not found or inactive' });
+        res.status(200).json({ status: 200, data: role });
 
-        res.status(200).json({
-            status: 'success',
-            data: {
-                roleId: role.roleId,
-                name: role.name,
-                description: role.description,
-                permissions: role.permissions,
-                audit: { createdAt: role.audit.createdAt, updatedAt: role.audit.updatedAt, createdBy: role.audit.createdBy },
-                status: role.status
-            }
-        });
-
-        // Log activity after successful fetch
-        await logUserActivity({
-            userId: loggedInUserId, activityType: 'GET_ROLE_BY_ID', activityDetails: `Fetched role with roleId: ${roleId}`, ipAddress, deviceInfo, endpoint, method: requestMethod || req.method, activityStatus: 'success'
-        });
+        await logUserActivity({ userId: loggedInUserId, activityType: 'GET_ROLE', activityDetails: `Fetched role ${roleId}`, ipAddress, deviceInfo, endpoint, method: requestMethod || req.method, activityStatus: 'success' });
     } catch (err) {
-        // Log error activity
-        await logUserActivity({
-            userId: loggedInUserId, activityType: 'GET_ROLE_BY_ID', activityDetails: `Error fetching role with roleId: ${roleId}`, ipAddress, deviceInfo, endpoint, method: requestMethod || req.method, activityStatus: 'failed', errorMessage: err.message
-        });
+        await logUserActivity({ userId: loggedInUserId, activityType: 'GET_ROLE', activityDetails: `Error fetching role ${roleId}`, ipAddress, deviceInfo, endpoint, method: requestMethod || req.method, activityStatus: 'failed', errorMessage: err.message });
 
-        res.status(500).json({ status: 'error', message: 'An error occurred while fetching role', details: err.message });
+        res.status(500).json({ status: 500, message: 'An error occurred while fetching role', details: err.message });
     }
 };
 
-//   Create Role
 const saveRole = async (req, res) => {
-    const { roleName, roleType, accessDetails } = req.body;
+    const { roleName, roleType, permissions } = req.body;
     const { ipAddress, requestMethod, deviceInfo } = req.metadata || {};
     const endpoint = req.originalUrl;
 
+    if (!roleName || !roleType || !permissions || !Array.isArray(permissions) || permissions.length === 0) {
+        return res.status(400).json({ status: 400, message: 'roleName, roleType, and permissions are required' });
+    }
+
     try {
-        //   Validate roleName: No numbers allowed
-        if (!roleName || /\d/.test(roleName)) {
-            return res.status(400).json({ status: 'error', message: 'The roleName cannot contain numbers or be empty.' });
+        if (!/^[A-Z\s]+$/.test(roleName)) {
+            return res.status(400).json({ status: 400, message: 'roleName must contain only uppercase letters and no numbers.' });
         }
 
-        //   Check if a role with the same name already exists
         const existingRole = await Role.findOne({ roleName: roleName.trim(), status: 1 });
         if (existingRole) {
-            return res.status(400).json({ status: 'error', message: 'A role with this name already exists.' });
+            return res.status(400).json({ status: 400, message: 'A role with this name already exists.' });
         }
 
-        //   Generate IDs
-        const _id = await getNextSequenceId('role'); // Auto-incremented _id
-        const roleId = await getNextRoleID(); // Custom roleId (e.g., role-001)
+        const moduleIds = permissions.map(detail => detail.moduleId);
+        const validModules = await ModuleName.find({ moduleId: { $in: moduleIds }, status: 1 }, { moduleId: 1 }).lean();
+        const validModuleIds = validModules.map(module => module.moduleId);
+        const invalidModuleIds = moduleIds.filter(id => !validModuleIds.includes(id));
 
-        //   Validate & Format Access Details
-        if (!Array.isArray(accessDetails) || accessDetails.length === 0) {
-            return res.status(400).json({ status: 'error', message: 'Access details must be a valid array.' });
-        }
+        if (invalidModuleIds.length > 0) return res.status(400).json({ status: 400, message: `Invalid moduleId(s): ${invalidModuleIds.join(', ')}` });
 
-        const formattedAccessDetails = accessDetails.map(detail => ({
-            moduleName: detail.moduleName.trim(),
-            permissions: detail.permissions.trim()
-        }));
+        const _id = await getNextSequenceId('role');
+        const roleId = await getNextRoleID();
 
-        //   Create New Role Object
-        const newRole = new Role({
-            _id,
-            roleId,
-            roleName: roleName.trim(),
-            roleType: roleType || 'Team',
-            accessDetails: formattedAccessDetails,
-            status: 1, // Active by default
-            audit: {
-                createdAt: new Date(),
-                createdBy: req.user?.username || 'system',
-            }
-        });
+        await new Role({ _id, roleId, roleName: roleName.trim(), roleType: roleType || 'Team', permissions, status: 1, audit: { createdAt: new Date(), createdBy: req.user?.userId || 'system' } }).save();
 
-        //   Save to DB
-        await newRole.save();
+        await logUserActivity({ userId: req.user?.userId || 'unknown', activityType: 'CREATE_ROLE', activityDetails: `Created role: ${roleName}`, ipAddress, deviceInfo, endpoint, method: requestMethod || req.method, activityStatus: 'success' });
 
-        //   Log Activity
-        await logUserActivity({
-            userId: req.user?.userId || 'unknown',
-            activityType: 'CREATE_ROLE',
-            activityDetails: `Created new role: ${roleName}`,
-            ipAddress,
-            deviceInfo,
-            endpoint,
-            method: requestMethod || req.method,
-            activityStatus: 'success',
-        });
-
-        //   Send Response
-        return res.status(201).json({
-            status: 'success',
-            message: 'Role created successfully',
-            data: { roleId: newRole.roleId },
-        });
+        return res.status(201).json({ status: 201, message: 'Role created successfully', data: { roleId } });
 
     } catch (err) {
-        //   Log Error
-        await logUserActivity({
-            userId: req.user?.userId || 'unknown',
-            activityType: 'CREATE_ROLE',
-            activityDetails: `Error while creating role: ${roleName}`,
-            ipAddress,
-            deviceInfo,
-            endpoint,
-            method: requestMethod || req.method,
-            activityStatus: 'failed',
-            errorMessage: err.message,
-        });
+        await logUserActivity({ userId: req.user?.userId || 'unknown', activityType: 'CREATE_ROLE', activityDetails: `Error creating role: ${roleName}`, ipAddress, deviceInfo, endpoint, method: requestMethod || req.method, activityStatus: 'failed', errorMessage: err.message });
 
-        return res.status(500).json({
-            status: 'error',
-            message: 'An error occurred while saving the role',
-            details: err.message,
-        });
+        return res.status(500).json({ status: 500, message: 'An error occurred while saving the role', details: err.message });
     }
 };
-
 
 const updateRole = async (req, res) => {
-    if (!req.user) return res.status(401).json({ status: 'error', message: 'Unauthorized: No token or invalid token' });
-    const { ipAddress, requestMethod, deviceInfo } = req.metadata || {};
-    const endpoint = req.originalUrl;
-    const { roleId } = req.params;
-    const { userId } = req.user.userId;
-    const { name: roleName, description, permissions } = req.body;
+    if (!req.user) return res.status(401).json({ status: 401, message: 'Unauthorized: No token or invalid token' });
 
-    // Validation checks
-    if (!roleName || !description || !permissions || !Array.isArray(permissions) || permissions.length === 0) {
-        return res.status(400).json({
-            status: 'error',
-            message: 'roleName, description, and permissions are mandatory fields. Permissions should be an array containing at least one object.',
-        });
-    }
-
-    // Ensure roleName does not contain any numbers
-    if (/\d/.test(roleName)) {
-        return res.status(400).json({
-            status: 'error',
-            message: 'roleName cannot contain any numbers',
-        });
-    }
-
-    try {
-        // First, check if the role with the given ID exists and has status 1
-        const role = await Role.findOne({ roleId, status: 1 });
-
-        if (!role) {
-            // If the role does not exist
-            return res.status(404).json({ status: 'error', message: 'Role with the given ID does not exist' });
-        }
-
-        // Update the role
-        role.name = roleName;
-        role.description = description;
-        role.permissions = permissions;
-        role.audit.updatedAt = new Date();
-        role.audit.updatedBy = req.validRoleName || 'system';
-        await role.save();
-
-        // Log activity after success
-        await logUserActivity({
-            userId, activityType: 'UPDATE_ROLE', activityDetails: `Updated role with roleId: ${roleId}`, ipAddress, deviceInfo, endpoint, method: requestMethod || req.method,
-            activityStatus: 'success',
-        });
-
-        return res.status(200).json({ status: 'success', message: 'Role updated successfully' });
-    } catch (err) {
-        // Log error activity    
-        await logUserActivity({
-            userId, activityType: 'UPDATE_ROLE', activityDetails: `Error occurred while updating role with roleId: ${roleId}`, ipAddress, deviceInfo, endpoint, method: requestMethod || req.method,
-            activityStatus: 'failed',
-            errorMessage: err.message,
-        });
-
-        res.status(500).json({ status: 'error', message: 'An error occurred while updating the role', details: err.message });
-
-    }
-};
-
-
-
-// Soft Delete Role by setting status to 0
-const deleteRole = async (req, res) => {
-    if (!req.user) {
-        return res.status(401).json({
-            status: 'error',
-            message: 'Unauthorized: No token or invalid token',
-        });
-    }
+    const { roleId, roleName,   permissions } = req.body;
     const { ipAddress, requestMethod, deviceInfo } = req.metadata || {};
     const endpoint = req.originalUrl;
     const userId = req.user.userId;
 
-
-    const { roleId } = req.params;
+    if (!roleId || !roleName   || !permissions || !Array.isArray(permissions)) {
+        return res.status(400).json({ status: 400, message: 'roleId, roleName  and permissions are required' });
+    }
 
     try {
-        // First, check if the role with the given ID exists and has status 1
         const role = await Role.findOne({ roleId, status: 1 });
+        if (!role) return res.status(404).json({ status: 404, message: 'Role not found or inactive' });
 
-        if (!role) {
-            // If the role does not exist
-            return res.status(404).json({ status: 'error', message: 'Role with the given ID does not exist' });
+        if (!/^[A-Z\s]+$/.test(roleName)) {
+            return res.status(400).json({ status: 400, message: 'roleName must contain only uppercase letters and no numbers.' });
+        }
+        // 🔹 Check if roleName already exists (excluding the current roleId)
+        const existingRole = await Role.findOne({ roleName: roleName.trim(), status: 1, roleId: { $ne: roleId } });
+        if (existingRole) {
+            return res.status(400).json({ status: 400, message: 'A role with this name already exists.' });
         }
 
-        if (role.status === 0) {
-            // If the role is already inactive
-            return res.status(400).json({ status: 'error', message: 'Role is already inactive' });
-        }
 
-        // If the role exists and is active, perform a soft delete (set status to 0)
-        role.status = 0;
+             // Extract all moduleIds from accessDetails
+             const moduleIds = permissions.map(detail => detail.moduleId);
+
+             // Fetch modules with the provided IDs that are active
+             const validModules = await ModuleName.find({ moduleId: { $in: moduleIds }, status: 1 }, { moduleId: 1 }).lean();
+             const validModuleIds = validModules.map(module => module.moduleId);
+     
+             // Check for any invalid moduleId
+             const invalidModuleIds = moduleIds.filter(id => !validModuleIds.includes(id));
+             if (invalidModuleIds.length > 0) {
+                 return res.status(400).json({ 
+                     status: 400, 
+                     message: `Invalid moduleId(s): ${invalidModuleIds.join(', ')}` 
+                 });
+             }
+
+        role.roleName = roleName.trim();
+        role.permissions = permissions;
+        role.audit.updatedAt = new Date();
+        role.audit.updatedBy = req.user?.userId || 'system';
+
         await role.save();
-        // Log activity after success
+
         await logUserActivity({
-            userId, activityType: 'DELETE_ROLE', activityDetails: `deleted new role: ${roleName}`, ipAddress, deviceInfo, endpoint, method: requestMethod || req.method, activityStatus: 'success',
+            userId,
+            activityType: 'UPDATE_ROLE',
+            activityDetails: `Updated role ${roleId}`,
+            ipAddress,
+            deviceInfo,
+            endpoint,
+            method: requestMethod || req.method,
+            activityStatus: 'success'
         });
-        res.json({ status: 'success', message: 'Role  deleted successfully' });
+
+        res.status(200).json({ status: 200, message: 'Role updated successfully', data: role });
+
     } catch (err) {
-        res.status(500).json({ status: 'error', message: 'An error occurred while deleting the role' });
+        await logUserActivity({
+            userId,
+            activityType: 'UPDATE_ROLE',
+            activityDetails: `Error updating role ${roleId}`,
+            ipAddress,
+            deviceInfo,
+            endpoint,
+            method: requestMethod || req.method,
+            activityStatus: 'failed',
+            errorMessage: err.message
+        });
+
+        res.status(500).json({ status: 500, message: 'An error occurred while updating the role', details: err.message });
     }
 };
 
+ 
 
-module.exports = {
-    listRoles,
-    saveRole,
-    deleteRole,
-    getRoleById,
-    updateRole
+const deleteRole = async (req, res) => {
+    if (!req.user) return res.status(401).json({ status: 401, message: 'Unauthorized: No token or invalid token' });
+
+    const { roleId } = req.body;
+    const { ipAddress, requestMethod, deviceInfo } = req.metadata || {};
+    const endpoint = req.originalUrl;
+    const userId = req.user.userId;
+
+    if (!roleId) {
+        return res.status(400).json({ status: 400, message: 'roleId is required' });
+    }
+    try {
+        const role = await Role.findOne({ roleId, status: 1 });
+        if (!role) return res.status(404).json({ status: 404, message: 'Role not found' });
+
+        if (role.status === 0) {
+            return res.status(400).json({ status: 400, message: 'Role is already inactive' });
+        }
+
+        role.status = 0;
+        await role.save();
+
+        await logUserActivity({ userId, activityType: 'DELETE_ROLE', activityDetails: `Deleted role ${roleId}`, ipAddress, deviceInfo, endpoint, method: requestMethod || req.method, activityStatus: 'success' });
+
+        res.json({ status: 200, message: 'Role deleted successfully' });
+    } catch (err) {
+        res.status(500).json({ status: 500, message: 'An error occurred while deleting the role', details: err.message });
+    }
 };
+
+module.exports = { listRoles, saveRole, deleteRole, getRoleById, updateRole };

@@ -13,28 +13,25 @@ dotenv.config();
  * ✅ Create a New Module
  */
 const saveModule = async (req, res) => {
-    console.log('🔹 Received request to create module'); // ✅ Debugging Step 1
-
+    
     const { moduleName, description } = req.body;
     const { ipAddress, requestMethod, deviceInfo } = req.metadata || {}, endpoint = req.originalUrl;
     const createdBy = req.user?.userId || 'system'; // ✅ Ensure `createdBy` is always defined
 
-     
-
-    // ✅ Check MongoDB Connection Status
-    console.log('🔹 MongoDB Connection State:', mongoose.connection.readyState); 
-    // (0: Disconnected, 1: Connected, 2: Connecting, 3: Disconnecting)
+ if (!moduleName) {
+        return res.status(400).json({ status: 400, message: 'Module name is required'  });
+    }
 
     try {
-        if (!/^[A-Za-z _-]+$/.test(moduleName.trim())) {
+        if (!/^[A-Z _-]+$/.test(moduleName.trim())) {
             console.warn('❌ Invalid Module Name:', moduleName); // ✅ Debugging Step 2
             return res.status(400).json({ 
                 status: 400, 
-                message: 'Module name can only contain letters, spaces, underscores (_), and hyphens (-).' 
+                message: 'Module name can only contain uppercase  letters, spaces, underscores (_), and hyphens (-).' 
             });
         }
 
-        // ✅ Check if module already exists
+        //   Check if module already exists
         const existingModule = await ModuleName.findOne({ moduleName: moduleName.trim(), status: 1 });
         if (existingModule) {
             console.warn('⚠️ Module already exists:', moduleName);
@@ -42,9 +39,9 @@ const saveModule = async (req, res) => {
         }
 
         const _id = await getNextSequenceId('module');
-        const moduleId = await getNextModuleID(); // Custom moduleId (e.g., module-001)
+        const moduleId = await getNextModuleID(); // Custom moduleId  
 
-        // ✅ Save new module
+        //   Save new module
         const newModule = new ModuleName({
             _id,
             moduleId,
@@ -55,10 +52,10 @@ const saveModule = async (req, res) => {
         });
 
         await newModule.save();
-        console.log('✅ Module created successfully:', moduleName);
+        console.log('  Module created successfully:', moduleName);
 
         // ✅ Log success activity
-        console.log('📌 Logging user activity for:', createdBy);
+        console.log('  Logging user activity for:', createdBy);
         await logUserActivity({
             userId: createdBy,
             activityType: 'CREATE_MODULE',
@@ -70,14 +67,14 @@ const saveModule = async (req, res) => {
             activityStatus: 'success'
         });
 
-        console.log('✅ User activity logged successfully'); // ✅ Debugging Step 3
-        return res.status(201).json({ status: 'success', message: 'Module created successfully', data: { moduleName: newModule.moduleName } });
+        console.log('✅ User activity logged successfully'); //   Debugging Step 3
+        return res.status(201).json({ status:  201, message: 'Module created successfully', data: { moduleName: newModule.moduleName } });
 
     } catch (err) {
         console.error('❌ Error saving module:', err);
 
         // ✅ Log failure activity
-        console.log('📌 Logging failed activity for:', createdBy);
+        console.log('  Logging failed activity for:', createdBy);
         try {
             await logUserActivity({
                 userId: createdBy,
@@ -100,12 +97,8 @@ const saveModule = async (req, res) => {
 };
 
 
+//List All Active Modules with Pagination
 
-
-
-/**
- * ✅ List All Active Modules with Pagination
- */
 const listModules = async (req, res) => {
     
 
@@ -114,7 +107,7 @@ const listModules = async (req, res) => {
 
     const pageNumber = parseInt(page, 10), pageSize = parseInt(limit, 10);
     if (isNaN(pageNumber) || isNaN(pageSize) || pageNumber <= 0 || pageSize <= 0) {
-        return res.status(400).json({ status: 'error', message: 'Page and limit must be valid positive numbers' });
+        return res.status(400).json({ status:  400, message: 'Page and limit must be valid positive numbers' });
     }
 
     try {
@@ -128,11 +121,11 @@ const listModules = async (req, res) => {
             .lean();
 
         if (!modules.length) {
-            return res.status(404).json({ status: 'error', message: 'No active modules found', meta: { page: pageNumber, limit: pageSize, totalRecords, totalPages: Math.ceil(totalRecords / pageSize) }, data: [] });
+            return res.status(404).json({ status:  404, message: 'No active modules found', meta: { page: pageNumber, limit: pageSize, totalRecords, totalPages: Math.ceil(totalRecords / pageSize) }, data: [] });
         }
 
         res.status(200).json({
-            status: 'success',
+            status: 200,
             meta: { page: pageNumber, limit: pageSize, totalRecords, totalPages: Math.ceil(totalRecords / pageSize) },
             data: modules.map(({ moduleName, description, audit }) => ({
                 moduleName, description, audit: { createdAt: audit.createdAt, createdBy: audit.createdBy }, status: 1
@@ -146,22 +139,23 @@ const listModules = async (req, res) => {
     }
 };
 
-/**
- * ✅ Get a Module by ID
- */
+  //Get a Module by ID
+ 
 const getModuleById = async (req, res) => {
-    if (!req.user) return res.status(401).json({ status: 'error', message: 'Unauthorized: No token or invalid token' });
+     
 
-    const { moduleId } = req.params, { ipAddress, requestMethod, deviceInfo } = req.metadata || {}, endpoint = req.originalUrl;
+    const { moduleId } = req.body, { ipAddress, requestMethod, deviceInfo } = req.metadata || {}, endpoint = req.originalUrl;
     const loggedInUserId = req.user.userId;
-
+if (!moduleId) {
+    return res.status(400).json({ status:  400, message: 'moduleId is required' });
+}   
     try {
-        const module = await ModuleName.findOne({ _id: moduleId, status: 1 }, { moduleName: 1, description: 1, audit: 1 });
+        const module = await ModuleName.findOne({   moduleId, status: 1 }, { moduleName: 1, description: 1, audit: 1, status: 1 }).lean();
 
-        if (!module) return res.status(404).json({ status: 'error', message: 'Module not found or inactive' });
+        if (!module) return res.status(404).json({ status: 404, message: 'Module not found or inactive' });
 
         res.status(200).json({
-            status: 'success',
+            status: 200,
             data: { moduleName: module.moduleName, description: module.description, audit: module.audit, status: module.status }
         });
 
@@ -178,34 +172,24 @@ const getModuleById = async (req, res) => {
  * ✅ Delete a Module (Soft Delete)
  */
 const deleteModule = async (req, res) => {
-    if (!req.user) return res.status(401).json({ status: 'error', message: 'Unauthorized: No token or invalid token' });
-
+ 
     const { moduleId } = req.params, { ipAddress, requestMethod, deviceInfo } = req.metadata || {}, endpoint = req.originalUrl;
     const userId = req.user.userId;
 
     try {
         const module = await ModuleName.findOne({  moduleId, status: 1 });
 
-        if (!module) return res.status(404).json({ status: 'error', message: 'Module not found or already inactive' });
+        if (!module) return res.status(404).json({ status: 404, message: 'Module not found or already inactive' });
 
         module.status = 0;
         await module.save();
 
         await logUserActivity({ userId, activityType: 'DELETE_MODULE', activityDetails: `Deleted module: ${module.moduleName}`, ipAddress, deviceInfo, endpoint, method: requestMethod || req.method, activityStatus: 'success' });
 
-        res.json({ status: 'success', message: 'Module deleted successfully' });
+        res.status(200).json({ status:  200, message: 'Module deleted successfully' });
     } catch (err) {
-        res.status(500).json({ status: 'error', message: 'An error occurred while deleting the module' });
+        res.status(500).json({ status:  500, message: 'An error occurred while deleting the module' });
     }
 };
-
-/**
- * ✅ Export all functions
- */
-module.exports = {
-     
-    listModules,
-    getModuleById,
-    saveModule,
-    deleteModule
-};
+ // Export all functions
+module.exports = { listModules, getModuleById, saveModule,deleteModule};

@@ -12,12 +12,12 @@ const auditSchema = new Schema({
 // Role Schema
 const roleSchema = new Schema({
     _id: { type: Number, auto: true },
-    roleId: { type: String, required: true, unique: true }, // Role Identifier
+    roleId: { type: String, required: true }, // Role Identifier
     roleName: { type: String, required: true }, // Role Name (e.g., "Admin", "User", "Manager")
 
     permissions: [{
         _id: false,
-        moduleId: { type: String, required: true, uppercase: true }, // e.g., "USERS", "ORDERS"
+        moduleId: { type: String, required: true  }, // e.g., "USERS", "ORDERS"
         accessType: { type: String, required: true, enum: ['view', 'add', 'edit', 'delete', 'all'] }, // Action type
         canAccess: { type: Number, default: 0 } // 1 = Allowed, 0 = Denied
     }],

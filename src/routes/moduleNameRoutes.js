@@ -28,15 +28,15 @@ router.get(
 router.post(
     '/create-module',
     auth,
-    // checkPermission(MODULE_NAMES, [PERMISSIONS.ADD, PERMISSIONS.ALL]),
+     checkPermission(MODULE_NAMES, [PERMISSIONS.ADD, PERMISSIONS.ALL]),
     saveModule
 );
 
 // Get Module by ID (Requires "view" or "all" permission)
 router.get(
-    '/get-module/:moduleId',
+    '/get-module-by-moduleId',
     auth,
-    // checkPermission(MODULE_NAMES, [PERMISSIONS.VIEW, PERMISSIONS.ALL]),
+     checkPermission(MODULE_NAMES, [PERMISSIONS.VIEW, PERMISSIONS.ALL]),
     getModuleById
 );
 
@@ -50,9 +50,9 @@ router.get(
 
 // Delete Module (Requires "delete" or "all" permission)
 router.delete(
-    '/delete-module/:moduleId',
+    '/delete-module-by-moduleId',
     auth,
-    // checkPermission(MODULE_NAMES, [PERMISSIONS.DELETE, PERMISSIONS.ALL]),
+     checkPermission(MODULE_NAMES, [PERMISSIONS.DELETE, PERMISSIONS.ALL]),
     deleteModule
 );
 

@@ -4,6 +4,10 @@ const VALID_ACTIVITY_TYPES = [
      'UPDATE_MODULE',
      'DELETE_MODULE',
      'GET_MODULE',
+     'CREATE_ROLE',
+     'UPDATE_ROLE',
+     'GET_ROLES',
+     'DELETE_ROLE'
      
      
   

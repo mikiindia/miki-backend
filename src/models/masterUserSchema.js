@@ -7,6 +7,7 @@ const masterUserSchema = new mongoose.Schema(
   {
     _id: { type: Number },
     userId: { type: String, default: null },
+    user_name: { type: String },
     phone_Number: { type: String },
     email_id: { type: String },
     password_hash: { type: String },
