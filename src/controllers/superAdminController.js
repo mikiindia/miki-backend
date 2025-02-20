@@ -84,40 +84,27 @@ const registerSuperadmin = async (req, res) => {
 };
 
  
-
-
 const loginSuperAdmin = async (req, res) => {
     try {
         const { email, password } = req.body;
         const user = await MasterUser.findOne({ email_id: email, isSuperAdmin: 1, status: 1 });
 
         if (!user || !(await bcrypt.compare(password, user.password_hash))) {
-            return res.status(401).json({ message: 'Invalid credentials' });
+            return res.status(401).json({ status: 401, message: 'Invalid credentials' });
         }
 
-        // Generate Tokens
         const accessToken = generateAccessToken(user);
         const refreshToken = generateRefreshToken(user);
 
-        // Save refresh token in DB (optional)
         await MasterUser.updateOne({ _id: user._id }, { refreshToken });
 
-        // Set Cookies
-        res.cookie('accessToken', accessToken, { 
-            httpOnly: true, 
-            secure: process.env.COOKIE_SECURE === 'true',
-            sameSite: 'Strict' ,
-            maxAge: 15 * 60 * 1000 // 15 minutes in milliseconds
+        return res.status(200).json({
+            status: 200,
+            message: 'Login successful',
+            accessToken,
+            refreshToken
         });
 
-        res.cookie('refreshToken', refreshToken, { 
-            httpOnly: true, 
-            secure: process.env.COOKIE_SECURE === 'true',
-            sameSite: 'Strict' ,
-            maxAge: 15 * 24 * 60 * 60 * 1000 // 15 days in milliseconds
-        });
-
-        res.status(200).json({status: 200,  message: 'Login successful', accessToken });
     } catch (error) {
         res.status(500).json({ status: 500, message: 'Server error', error: error.message });
     }
@@ -125,12 +112,9 @@ const loginSuperAdmin = async (req, res) => {
 
 const logoutSuperAdmin = async (req, res) => {
     try {
-        res.clearCookie('accessToken');
-        res.clearCookie('refreshToken');
-
-        res.json({ status: 200, message: 'Logout successful' });
+        res.status(200).json({ status: 200, message: 'Logout successful' });
     } catch (error) {
-        res.status(500).json({status: 500,  message: 'Server error', error: error.message });
+        res.status(500).json({ status: 500, message: 'Server error', error: error.message });
     }
 };
 

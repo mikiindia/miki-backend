@@ -3,16 +3,15 @@ const { refreshAccessToken } = require('../controllers/authController');
 
 const authMiddleware = async (req, res, next) => {
     try {
-        let token = req.cookies.accessToken;
+        let token = req.headers.authorization?.split(' ')[1]; // Extract Bearer Token
 
-        // If no access token is found, try to refresh
         if (!token) {
             console.log("⚠️ No access token found, attempting refresh...");
-            const refreshResult = await refreshAccessToken(req, res, true);  // ✅ Always pass `true`
+            const refreshResult = await refreshAccessToken(req, res, true); 
 
             if (refreshResult && refreshResult.status === 200) {
                 console.log("✅ Token refreshed successfully in middleware.");
-                req.cookies.accessToken = refreshResult.newAccessToken; // Attach new token to request
+                req.headers.authorization = `Bearer ${refreshResult.newAccessToken}`; // Attach new token
                 return authMiddleware(req, res, next);  // 🔄 Retry the original request
             }
 
@@ -22,17 +21,16 @@ const authMiddleware = async (req, res, next) => {
 
         let decoded;
         try {
-            // ✅ Verify Access Token
             decoded = jwt.verify(token, process.env.JWT_SECRET);
         } catch (error) {
             if (error.name === 'TokenExpiredError') {
                 console.log("⚠️ Access token expired, trying to refresh...");
-                const refreshResult = await refreshAccessToken(req, res, true);  // ✅ Always pass `true`
+                const refreshResult = await refreshAccessToken(req, res, true);
 
                 if (refreshResult && refreshResult.status === 200) {
                     console.log("✅ Token refreshed successfully.");
-                    req.cookies.accessToken = refreshResult.newAccessToken; // Attach new token
-                    return authMiddleware(req, res, next);  // 🔄 Retry the original request
+                    req.headers.authorization = `Bearer ${refreshResult.newAccessToken}`;
+                    return authMiddleware(req, res, next);
                 }
 
                 console.log("❌ Token refresh failed, forcing logout.");
@@ -42,7 +40,6 @@ const authMiddleware = async (req, res, next) => {
             }
         }
 
-        // ✅ Attach user details to `req.user`
         req.user = {
             userId: decoded.userId || null,
             roleId: decoded.roleId,
@@ -50,12 +47,11 @@ const authMiddleware = async (req, res, next) => {
         };
         console.log("🔍 User Object from Auth Middleware:", req.user);
 
-        next(); // Proceed to the next middleware ✅
+        next(); 
 
     } catch (error) {
         return res.status(500).json({ status: 500, message: 'Server Error during authentication', details: error.message });
     }
 };
-
 
 module.exports = authMiddleware;
