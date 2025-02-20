@@ -159,18 +159,72 @@ if (!moduleId) {
             data: { moduleName: module.moduleName, description: module.description, audit: module.audit, status: module.status }
         });
 
-        await logUserActivity({ userId: loggedInUserId, activityType: 'GET_MODULE_BY_ID', activityDetails: `Fetched module with ID: ${moduleId}`, ipAddress, deviceInfo, endpoint, method: requestMethod || req.method, activityStatus: 'success' });
+        await logUserActivity({ userId: loggedInUserId, activityType: 'GET_MODULES', activityDetails: `Fetched module with ID: ${moduleId}`, ipAddress, deviceInfo, endpoint, method: requestMethod || req.method, activityStatus: 'success' });
     } catch (err) {
-        await logUserActivity({ userId: loggedInUserId, activityType: 'GET_MODULE_BY_ID', activityDetails: `Error fetching module with ID: ${moduleId}`, ipAddress, deviceInfo, endpoint, method: requestMethod || req.method, activityStatus: 'failed', errorMessage: err.message });
+        await logUserActivity({ userId: loggedInUserId, activityType: 'GET_MODULES', activityDetails: `Error fetching module with ID: ${moduleId}`, ipAddress, deviceInfo, endpoint, method: requestMethod || req.method, activityStatus: 'failed', errorMessage: err.message });
         res.status(500).json({ status: 'error', message: 'An error occurred while fetching module', details: err.message });
     }
 };
 
+const updateModule = async (req, res) => {
+    const { moduleId, moduleName, description } = req.body;
+    const { ipAddress, requestMethod, deviceInfo } = req.metadata || {};
+    const endpoint = req.originalUrl;
+    const updatedBy = req.user?.userId || 'system';
+
+    // ✅ Check if moduleId is provided
+    if (!moduleId) return res.status(400).json({ status: 400, message: 'Module ID is required' });
+
+    // ✅ Validate moduleName
+    if (moduleName && !/^[A-Z _-]+$/.test(moduleName.trim())) {
+        return res.status(400).json({ 
+            status: 400, 
+            message: 'Module name can only contain uppercase letters, spaces, underscores (_), and hyphens (-).' 
+        });
+    }
+
+    try {
+        // ✅ Check if the module exists
+        const existingModule = await ModuleName.findOne({ moduleId, status: 1 });
+        if (!existingModule) return res.status(404).json({ status: 404, message: 'Module not found or inactive' });
+
+        // ✅ Check for duplicate moduleName (excluding current moduleId)
+        if (moduleName) {
+            const duplicateModule = await ModuleName.findOne({ 
+                moduleName: moduleName.trim(), 
+                status: 1, 
+                moduleId: { $ne: moduleId } 
+            });
+
+            if (duplicateModule) return res.status(400).json({ status: 400, message: 'A module with this name already exists.' });
+        }
+
+        // ✅ Update module details
+        existingModule.moduleName = moduleName ? moduleName.trim() : existingModule.moduleName;
+        existingModule.description = description || existingModule.description;
+        existingModule.audit.updatedAt = new Date();
+        existingModule.audit.updatedBy = updatedBy;
+
+        await existingModule.save();
+
+        // ✅ Log success activity in one line
+        await logUserActivity({ userId: updatedBy, activityType: 'UPDATE_MODULE', activityDetails: `Updated module: ${moduleName || existingModule.moduleName}`, ipAddress, deviceInfo, endpoint, method: requestMethod || req.method, activityStatus: 'success' });
+
+        return res.status(200).json({ status: 200, message: 'Module updated successfully' });
+
+    } catch (err) {
+        console.error('❌ Error updating module:', err);
+
+        // ✅ Log failure activity in one line
+        await logUserActivity({ userId: updatedBy, activityType: 'UPDATE_MODULE', activityDetails: `Error updating module: ${moduleName || moduleId}`, ipAddress, deviceInfo, endpoint, method: requestMethod || req.method, activityStatus: 'failed', errorMessage: err.message }).catch(logErr => console.error('❌ Failed to log error activity:', logErr));
+
+        return res.status(500).json({ status: 500, message: 'An error occurred while updating the module', details: err.message });
+    }
+};
 
 
-/**
- * ✅ Delete a Module (Soft Delete)
- */
+  //Delete a Module (Soft Delete)
+  
 const deleteModule = async (req, res) => {
  
     const { moduleId } = req.params, { ipAddress, requestMethod, deviceInfo } = req.metadata || {}, endpoint = req.originalUrl;
@@ -192,4 +246,4 @@ const deleteModule = async (req, res) => {
     }
 };
  // Export all functions
-module.exports = { listModules, getModuleById, saveModule,deleteModule};
+module.exports = { listModules, getModuleById, saveModule,updateModule,deleteModule};
