@@ -85,6 +85,8 @@ const registerSuperadmin = async (req, res) => {
 
  
 const loginSuperAdmin = async (req, res) => {
+    const { ipAddress, requestMethod, deviceInfo } = req.metadata || {};
+    const endpoint = req.originalUrl;
     try {
         const { email, password } = req.body;
         const user = await MasterUser.findOne({ email_id: email, isSuperAdmin: 1, status: 1 });
@@ -96,26 +98,59 @@ const loginSuperAdmin = async (req, res) => {
         const accessToken = generateAccessToken(user);
         const refreshToken = generateRefreshToken(user);
 
-        await MasterUser.updateOne({ _id: user._id }, { refreshToken });
+        // ✅ Update lastLogin and isLoggedIn in the database
+        await MasterUser.updateOne(
+            { _id: user._id },
+            { refreshToken, lastLogin: new Date(), isLoggedIn: true }
+        );
+        
+ // ✅ Log success activity in one line
+ await logUserActivity({ userId: user.userId, activityType: 'LOGIN_SUPERADMIN', activityDetails: 'Successful login', ipAddress, deviceInfo, endpoint, method: requestMethod || req.method, activityStatus: 'success' });
 
-        return res.status(200).json({
-            status: 200,
-            message: 'Login successful',
-            accessToken,
-            refreshToken
-        });
+ return res.status(200).json({
+     status: 200,
+     message: 'Login successful',
+     accessToken,
+     refreshToken
+ });
 
-    } catch (error) {
-        res.status(500).json({ status: 500, message: 'Server error', error: error.message });
-    }
+} catch (error) {
+ console.error('❌ Error during login:', error);
+
+ // ✅ Log server error activity in one line
+ await logUserActivity({ userId: 'unknown', activityType: 'LOGIN_SUPERADMIN', activityDetails: 'Server error during login', ipAddress: req.metadata?.ipAddress, deviceInfo: req.metadata?.deviceInfo, endpoint: req.originalUrl, method: req.metadata?.requestMethod || req.method, activityStatus: 'failed', errorMessage: error.message }).catch(logErr => console.error('❌ Failed to log error activity:', logErr));
+
+ return res.status(500).json({ status: 500, message: 'Server error', error: error.message });
+}
 };
 
 const logoutSuperAdmin = async (req, res) => {
     try {
-        res.status(200).json({ status: 200, message: 'Logout successful' });
+        const { userId } = req.user;
+        const { ipAddress, requestMethod, deviceInfo } = req.metadata || {};
+        const endpoint = req.originalUrl;
+
+        // ✅ Set refreshToken to null & update isLoggedIn to false in the database
+        await MasterUser.updateOne(
+            { userId, isSuperAdmin: 1 },
+            { $unset: { refreshToken: 1 }, isLoggedIn: false }
+        );
+
+        // ✅ Log logout activity in one line
+        await logUserActivity({ userId, activityType: 'LOGOUT_SUPERADMIN', activityDetails: 'Super Admin logged out successfully', ipAddress, deviceInfo, endpoint, method: requestMethod || req.method, activityStatus: 'success' });
+
+        return res.status(200).json({ status: 200, message: 'Superadmin Logout successful' });
+
     } catch (error) {
-        res.status(500).json({ status: 500, message: 'Server error', error: error.message });
+        console.error('❌ Error during logout:', error);
+
+        // ✅ Log logout error activity in one line
+        await logUserActivity({ userId: req.user?.userId || 'unknown', activityType: 'LOGOUT_SUPERADMIN', activityDetails: 'Server error during logout', ipAddress: req.metadata?.ipAddress, deviceInfo: req.metadata?.deviceInfo, endpoint: req.originalUrl, method: req.metadata?.requestMethod || req.method, activityStatus: 'failed', errorMessage: error.message }).catch(logErr => console.error('❌ Failed to log error activity:', logErr));
+
+        return res.status(500).json({ status: 500, message: 'Server error', error: error.message });
     }
 };
+
+
 
 module.exports = { registerSuperadmin, loginSuperAdmin, logoutSuperAdmin };

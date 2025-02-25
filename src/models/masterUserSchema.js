@@ -22,7 +22,8 @@ const masterUserSchema = new mongoose.Schema(
 
     otp: { type: String, default: null },
     otpExpiry: { type: Date, default: null },
-
+    lastLogin: { type: Date, default: null },
+    isLoggedIn: { type: Boolean, default: false },
     refreshToken: { type: String, default: null },
     refreshTokenExpiry: { type: Date, default: null },
 

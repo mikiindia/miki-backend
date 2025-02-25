@@ -245,5 +245,6 @@ const deleteModule = async (req, res) => {
         res.status(500).json({ status:  500, message: 'An error occurred while deleting the module' });
     }
 };
+
  // Export all functions
 module.exports = { listModules, getModuleById, saveModule,updateModule,deleteModule};

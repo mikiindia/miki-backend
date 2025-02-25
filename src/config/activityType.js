@@ -7,7 +7,14 @@ const VALID_ACTIVITY_TYPES = [
      'CREATE_ROLE',
      'UPDATE_ROLE',
      'GET_ROLES',
-     'DELETE_ROLE'
+     'DELETE_ROLE',
+     'LOGIN_SUPERADMIN',
+     'LOGOUT_SUPERADMIN',
+     'REGISTER_TENANT',
+     'LOGIN_TENANT',
+     'UPDATE_TENANT',
+     'DELETE_TENANT',
+     'GET_TENANTS'
      
      
      

@@ -11,17 +11,19 @@ const auditSchema = new Schema({
 
 // Tenant Schema
 const tenantSchema = new Schema({
-    _id: { type: Number, auto: true }, // Auto-generated unique ID used fore creating database
+    _id: { type: String, auto: true }, // Auto-generated unique ID used fore creating database
     tenantId: { type: String, required: true  }, // Unique Tenant Identifier
+    tenantName: { type: String, required: true }, // Tenant's Name
     companyName: { type: String, required: true }, // Tenant's Company Name
     companySize: { type: String, enum: ['Small', 'Medium', 'Large'], required: true }, // Size of the Company
     registrationNumber: { type: String   }, // Business Registration Number
     country: { type: String, required: true }, // Country of Operation
     domain: { type: String  }, // Unique domain for the company
     industryType: { type: String, required: true }, // Industry Type (Finance, Healthcare, etc.)
-
-    email_id: { type: String, required: true  }, // Official Email ID
+    companyLogo: { type: String, default: 'https://placehold.co/360' }, // Company Logo
+    email_id: { type: String, required: true, unique: true, sparse: true  }, // Official Email ID
     phone_number: { type: String, required: true  }, // Contact Phone Number
+    alternatePhone_Number: { type: String, trim: true, default: null }, // Alternate Contact Number
     password_hash: { type: String, required: true }, // Encrypted Password
     address: { type: String, required: true }, // Office Address
 
@@ -38,7 +40,6 @@ const tenantSchema = new Schema({
     audit: auditSchema // Audit Fields for Tracking Changes
 });
 
-// Indexing for better performance
-tenantSchema.index({ tenantId: 1, domain: 1 });
+ 
 
 module.exports = mongoose.model('Tenant', tenantSchema);
